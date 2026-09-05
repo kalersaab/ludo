@@ -27,13 +27,13 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text(
-          'Ludo',
+          'Ludo Game',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -45,7 +45,7 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
               children: [
                 // Ludo Board
                 const LudoBoard(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 // Dice Controls
                 DiceControls(
                   currentPlayer: currentPlayer,
