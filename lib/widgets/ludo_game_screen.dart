@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import '../native_ludo.dart';
 import 'ludo_board.dart';
 import 'dice_controls.dart';
 
@@ -14,10 +15,23 @@ class LudoGameScreen extends StatefulWidget {
 class _LudoGameScreenState extends State<LudoGameScreen> {
   int diceValue = 6;
   String currentPlayer = 'Red';
+  NativeLudoGame? nativeGame;
+
+  @override
+  void initState() {
+    super.initState();
+    nativeGame = NativeLudoGame.tryCreate();
+  }
+
+  @override
+  void dispose() {
+    nativeGame?.dispose();
+    super.dispose();
+  }
 
   void rollDice() {
     setState(() {
-      diceValue = math.Random().nextInt(6) + 1;
+      diceValue = nativeGame?.rollDice() ?? math.Random().nextInt(6) + 1;
     });
   }
 
@@ -27,32 +41,33 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text(
-          'Ludo',
+          'Ludo Game',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Ludo Board
-                const LudoBoard(),
-                const SizedBox(height: 20),
-                // Dice Controls
-                DiceControls(
-                  currentPlayer: currentPlayer,
-                  diceValue: diceValue,
-                  onRollDice: rollDice,
-                ),
-              ],
+            padding: const EdgeInsets.all(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const LudoBoard(),
+                  const SizedBox(height: 16),
+                  DiceControls(
+                    currentPlayer: currentPlayer,
+                    diceValue: diceValue,
+                    onRollDice: rollDice,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

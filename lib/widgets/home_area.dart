@@ -18,16 +18,16 @@ class HomeArea extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
-        border: Border.all(color: Colors.black87, width: 2),
+        color: color,
+        border: Border.all(color: Colors.black54, width: 1),
       ),
       child: Padding(
-        padding: EdgeInsets.all(size * 0.15),
+        padding: EdgeInsets.all(size * 0.12),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color, width: 2),
+            borderRadius: BorderRadius.circular(size * 0.05),
+            border: Border.all(color: Colors.grey.shade300, width: 2),
           ),
           child: GridView.count(
             crossAxisCount: 2,
@@ -37,7 +37,19 @@ class HomeArea extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: List.generate(
               4,
-              (index) => GamePiece(color: color, size: size * 0.15),
+              (index) => Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(size * 0.02),
+                  child: GamePiece(color: color, size: size * 0.16),
+                ),
+              ),
             ),
           ),
         ),

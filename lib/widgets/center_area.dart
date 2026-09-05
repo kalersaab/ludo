@@ -10,30 +10,9 @@ class CenterArea extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: Stack(
-        children: [
-          // Four colored triangles
-          CustomPaint(
-            size: Size(size, size),
-            painter: CenterTrianglePainter(),
-          ),
-          // Center star
-          Center(
-            child: Container(
-              width: size * 0.4,
-              height: size * 0.4,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.star,
-                color: Colors.amber,
-                size: size * 0.3,
-              ),
-            ),
-          ),
-        ],
+      child: CustomPaint(
+        size: Size(size, size),
+        painter: CenterTrianglePainter(),
       ),
     );
   }
@@ -47,7 +26,7 @@ class CenterTrianglePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     
     // Green triangle (top)
-    paint.color = Colors.green;
+    paint.color = const Color(0xFF00C853);
     final greenPath = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
@@ -55,31 +34,41 @@ class CenterTrianglePainter extends CustomPainter {
       ..close();
     canvas.drawPath(greenPath, paint);
     
-    // Yellow triangle (left)
-    paint.color = Colors.yellow;
-    final yellowPath = Path()
+    // Blue triangle (left) - Changed from Yellow
+    paint.color = const Color(0xFF2196F3);
+    final bluePath = Path()
       ..moveTo(0, 0)
       ..lineTo(0, size.height)
       ..lineTo(center.dx, center.dy)
       ..close();
-    canvas.drawPath(yellowPath, paint);
+    canvas.drawPath(bluePath, paint);
     
-    // Blue triangle (right)
-    paint.color = Colors.blue;
-    final bluePath = Path()
+    // Yellow triangle (right) - Changed from Blue
+    paint.color = const Color(0xFFFFEB3B);
+    final yellowPath = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
       ..lineTo(center.dx, center.dy)
       ..close();
-    canvas.drawPath(bluePath, paint);
+    canvas.drawPath(yellowPath, paint);
     
     // Red triangle (bottom)
-    paint.color = Colors.red;
+    paint.color = const Color(0xFFFF0000);
     final redPath = Path()
       ..moveTo(0, size.height)
       ..lineTo(size.width, size.height)
       ..lineTo(center.dx, center.dy)
       ..close();
+    canvas.drawPath(redPath, paint);
+
+    // Draw borders
+    paint.style = PaintingStyle.stroke;
+    paint.color = Colors.black54;
+    paint.strokeWidth = 1;
+    
+    canvas.drawPath(greenPath, paint);
+    canvas.drawPath(bluePath, paint);
+    canvas.drawPath(yellowPath, paint);
     canvas.drawPath(redPath, paint);
   }
 

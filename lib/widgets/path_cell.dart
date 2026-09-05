@@ -5,6 +5,8 @@ class PathCell extends StatelessWidget {
   final Color color;
   final bool isSafe;
   final bool isArrow;
+  final String? arrowDirection;
+  final Color? safeColor;
 
   const PathCell({
     super.key,
@@ -12,7 +14,24 @@ class PathCell extends StatelessWidget {
     required this.color,
     this.isSafe = false,
     this.isArrow = false,
+    this.arrowDirection,
+    this.safeColor,
   });
+
+  IconData _getArrowIcon() {
+    switch (arrowDirection) {
+      case 'up':
+        return Icons.arrow_upward;
+      case 'down':
+        return Icons.arrow_downward;
+      case 'left':
+        return Icons.arrow_back;
+      case 'right':
+        return Icons.arrow_forward;
+      default:
+        return Icons.arrow_upward;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +40,31 @@ class PathCell extends StatelessWidget {
       height: cellSize,
       decoration: BoxDecoration(
         color: color,
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+        border: Border.all(
+          color: Colors.grey.shade400,
+          width: 0.5,
+        ),
       ),
-      child: isSafe
-          ? Icon(
-              Icons.star,
-              color: Colors.white,
-              size: cellSize * 0.5,
-            )
-          : isArrow
-              ? Icon(
-                  Icons.arrow_upward,
-                  color: Colors.black45,
-                  size: cellSize * 0.4,
-                )
-              : null,
+      child: Stack(
+        children: [
+          if (isSafe)
+            Center(
+              child: Icon(
+                Icons.star,
+                color: Colors.grey,
+                size: cellSize * 0.6,
+              ),
+            ),
+          if (isArrow)
+            Center(
+              child: Icon(
+                _getArrowIcon(),
+                color: Colors.black54,
+                size: cellSize * 0.5,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
