@@ -1,6 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-class DiceControls extends StatelessWidget {
+class DiceControls extends StatefulWidget {
   final String currentPlayer;
   final int diceValue;
   final VoidCallback onRollDice;
@@ -11,6 +13,43 @@ class DiceControls extends StatelessWidget {
     required this.diceValue,
     required this.onRollDice,
   });
+
+  @override
+  State<DiceControls> createState() => _DiceControlsState();
+}
+
+class _DiceControlsState extends State<DiceControls>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rollController;
+  final math.Random _random = math.Random();
+  List<int> _rollFaces = [1];
+
+  @override
+  void initState() {
+    super.initState();
+    _rollController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+  }
+
+  @override
+  void dispose() {
+    _rollController.dispose();
+    super.dispose();
+  }
+
+  void _rollDice() {
+    if (_rollController.isAnimating) {
+      return;
+    }
+
+    widget.onRollDice();
+    setState(() {
+      _rollFaces = List.generate(12, (_) => _random.nextInt(6) + 1);
+    });
+    _rollController.forward(from: 0);
+  }
 
   Color _getPlayerColor(String player) {
     switch (player) {
@@ -27,67 +66,147 @@ class DiceControls extends StatelessWidget {
     }
   }
 
+  Color _getPlayerTextColor(Color playerColor) {
+    return playerColor.computeLuminance() > 0.55
+        ? Colors.black87
+        : Colors.white;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      constraints: const BoxConstraints(maxWidth: 360),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.shade300,
-          width: 2,
+          color: Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _getPlayerColor(currentPlayer),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '$currentPlayer\'s Turn',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          GestureDetector(
-            onTap: onRollDice,
+          Expanded(
             child: Container(
-              width: 70,
-              height: 70,
+              constraints: const BoxConstraints(minHeight: 54),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey.shade400,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+                color: _getPlayerColor(widget.currentPlayer),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _getPlayerTextColor(
+                        _getPlayerColor(widget.currentPlayer),
+                      ).withValues(alpha: 0.8),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CURRENT TURN',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: _getPlayerTextColor(
+                              _getPlayerColor(widget.currentPlayer),
+                            ).withValues(alpha: 0.75),
+                          ),
+                        ),
+                        Text(
+                          widget.currentPlayer,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: _getPlayerTextColor(
+                              _getPlayerColor(widget.currentPlayer),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: Center(
-                child: _buildDiceFace(diceValue),
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 76,
+            height: 76,
+            child: GestureDetector(
+              onTap: _rollDice,
+              child: AnimatedBuilder(
+                animation: _rollController,
+                builder: (context, child) {
+                final progress = _rollController.value;
+                final faceIndex = math.min(
+                  (progress * _rollFaces.length).floor(),
+                  _rollFaces.length - 1,
+                );
+                final faceValue = progress == 1
+                    ? widget.diceValue
+                    : _rollFaces[faceIndex];
+                final rotation =
+                    math.sin(progress * math.pi * 12) * (1 - progress) * 0.22;
+                final scale = 1 - math.sin(progress * math.pi) * 0.12;
+                final offset =
+                    math.sin(progress * math.pi * 8) * (1 - progress) * 2;
+
+                return Transform.translate(
+                  offset: Offset(offset, 0),
+                  child: Transform.rotate(
+                    angle: rotation,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey.shade400,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: _buildDiceFace(faceValue),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+                },
               ),
             ),
           ),

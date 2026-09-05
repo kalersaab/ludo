@@ -22,7 +22,7 @@ class HomeArea extends StatelessWidget {
         border: Border.all(color: Colors.black54, width: 1),
       ),
       child: Padding(
-        padding: EdgeInsets.all(size * 0.15),
+        padding: EdgeInsets.all(size * 0.12),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -31,9 +31,9 @@ class HomeArea extends StatelessWidget {
           ),
           child: GridView.count(
             crossAxisCount: 2,
-            padding: EdgeInsets.all(size * 0.12),
-            mainAxisSpacing: size * 0.12,
-            crossAxisSpacing: size * 0.12,
+            padding: EdgeInsets.all(size * 0.08),
+            mainAxisSpacing: size * 0.08,
+            crossAxisSpacing: size * 0.08,
             physics: const NeverScrollableScrollPhysics(),
             children: List.generate(
               4,
@@ -47,7 +47,7 @@ class HomeArea extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(size * 0.02),
-                  child: GamePiece(color: color, size: size * 0.12),
+                  child: GamePiece(color: color, size: size * 0.16),
                 ),
               ),
             ),
