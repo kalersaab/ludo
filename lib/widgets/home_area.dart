@@ -6,6 +6,7 @@ class HomeArea extends StatelessWidget {
   final Color color;
   final double size;
   final bool canMove;
+  final bool showTokens;
   final ValueChanged<int>? onTokenTap;
   final Set<int> movedPieces;
 
@@ -14,6 +15,7 @@ class HomeArea extends StatelessWidget {
     required this.color,
     required this.size,
     this.canMove = false,
+    this.showTokens = true,
     this.onTokenTap,
     this.movedPieces = const {},
   });
@@ -47,13 +49,15 @@ class HomeArea extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: canMove && !isMoved ? color : color.withValues(alpha: 0.35),
+                    color: canMove && !isMoved
+                        ? color
+                        : color.withValues(alpha: 0.35),
                     width: 2,
                   ),
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(size * 0.02),
-                  child: isMoved
+                  child: isMoved || !showTokens
                       ? const SizedBox.shrink()
                       : GamePiece(color: color, size: size * 0.16),
                 ),

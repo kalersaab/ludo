@@ -9,6 +9,9 @@ class LudoBoard extends StatelessWidget {
   final String currentPlayer;
   final int diceValue;
   final List<Set<int>> movedPieces;
+  final List<Map<int, int>> piecePositions;
+  final int playerCount;
+  final bool canSelectTokens;
   final ValueChanged<int> onTokenTap;
 
   const LudoBoard({
@@ -16,6 +19,9 @@ class LudoBoard extends StatelessWidget {
     required this.currentPlayer,
     required this.diceValue,
     required this.movedPieces,
+    required this.piecePositions,
+    required this.playerCount,
+    required this.canSelectTokens,
     required this.onTokenTap,
   });
 
@@ -23,19 +29,22 @@ class LudoBoard extends StatelessWidget {
     return <String>['Red', 'Green', 'Blue', 'Yellow'].indexOf(player);
   }
 
+  List<Offset> _cellPath(List<int> numbers) {
+    return numbers.map((number) {
+      final zeroBased = number - 1;
+      return Offset((zeroBased % 15).toDouble(), (zeroBased ~/ 15).toDouble());
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.black87,
-            width: 3,
-          ),
+          border: Border.all(color: Colors.black87, width: 3),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
@@ -51,11 +60,15 @@ class LudoBoard extends StatelessWidget {
               final size = constraints.maxWidth;
               final cellSize = size / 15;
               final activePlayerIndex = _playerIndex(currentPlayer);
+              final redColor = const Color(0xFFFF0000);
+              final greenColor = const Color(0xFF00C853);
+              final blueColor = const Color(0xFF2196F3);
+              final yellowColor = const Color(0xFFFFEB3B);
               final colors = <Color>[
-                const Color(0xFFFF0000),
-                const Color(0xFF00C853),
-                const Color(0xFF2196F3),
-                const Color(0xFFFFEB3B),
+                redColor,
+                greenColor,
+                blueColor,
+                yellowColor,
               ];
 
               Widget homeArea(Color color, Alignment alignment, int player) {
@@ -65,7 +78,11 @@ class LudoBoard extends StatelessWidget {
                     child: HomeArea(
                       color: color,
                       size: cellSize * 6,
-                      canMove: diceValue == 6 && activePlayerIndex == player,
+                      canMove:
+                          canSelectTokens &&
+                          diceValue == 6 &&
+                          activePlayerIndex == player,
+                      showTokens: player < playerCount,
                       movedPieces: movedPieces[player],
                       onTokenTap: onTokenTap,
                     ),
@@ -77,19 +94,15 @@ class LudoBoard extends StatelessWidget {
                 children: [
                   // Background
                   Container(color: Colors.white),
-                  
-                  // Red Home (Top-Left)
+
                   homeArea(colors[0], Alignment.topLeft, 0),
-                  
-                  // Green Home (Top-Right)
+
                   homeArea(colors[1], Alignment.topRight, 1),
-                  
-                  // Yellow Home (Bottom-Left) - Actually this should be Blue
-                  homeArea(colors[2], Alignment.bottomLeft, 2),
-                  
-                  // Blue Home (Bottom-Right) - Actually this should be Yellow
-                  homeArea(colors[3], Alignment.bottomRight, 3),
-                  
+
+                  homeArea(blueColor, Alignment.bottomLeft, 2),
+
+                  homeArea(yellowColor, Alignment.bottomRight, 3),
+
                   // Vertical Paths
                   Positioned(
                     left: cellSize * 6,
@@ -109,7 +122,7 @@ class LudoBoard extends StatelessWidget {
                       isTop: false,
                     ),
                   ),
-                  
+
                   // Horizontal Paths
                   Positioned(
                     left: 0,
@@ -129,7 +142,7 @@ class LudoBoard extends StatelessWidget {
                       isLeft: false,
                     ),
                   ),
-                  
+
                   // Center Triangle
                   Positioned(
                     left: cellSize * 6,
@@ -137,13 +150,15 @@ class LudoBoard extends StatelessWidget {
                     child: CenterArea(size: cellSize * 3),
                   ),
 
-                  for (int player = 0; player < 4; player++)
+                  for (int player = 0; player < playerCount; player++)
                     for (final piece in movedPieces[player])
                       _buildMovedToken(
                         player,
                         piece,
                         cellSize,
                         colors[player],
+                        piecePositions[player][piece] ?? 0,
+                        canSelectTokens && activePlayerIndex == player,
                       ),
                 ],
               );
@@ -159,24 +174,271 @@ class LudoBoard extends StatelessWidget {
     int piece,
     double cellSize,
     Color color,
+    int progress,
+    bool canSelect,
   ) {
-    final positions = <Offset>[
-      Offset(0, cellSize * 7),
-      Offset(cellSize * 7, 0),
-      Offset(cellSize * 7, cellSize * 14),
-      Offset(cellSize * 14, cellSize * 7),
+    final mainPaths = <List<Offset>>[
+      _cellPath([
+        92,
+        93,
+        94,
+        95,
+        96,
+        82,
+        67,
+        52,
+        37,
+        22,
+        7,
+        8,
+        9,
+        24,
+        39,
+        54,
+        69,
+        84,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        120,
+        135,
+        134,
+        133,
+        132,
+        131,
+        130,
+        144,
+        159,
+        174,
+        189,
+        204,
+        219,
+        218,
+        217,
+        202,
+        187,
+        172,
+        157,
+        142,
+        126,
+        125,
+        124,
+        123,
+        122,
+        121,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+      ]),
+      _cellPath([
+        24,
+        39,
+        54,
+        69,
+        84,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        120,
+        135,
+        134,
+        133,
+        132,
+        131,
+        130,
+        144,
+        159,
+        174,
+        189,
+        204,
+        219,
+        218,
+        217,
+        202,
+        187,
+        172,
+        157,
+        142,
+        126,
+        125,
+        124,
+        123,
+        122,
+        121,
+        106,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        82,
+        67,
+        52,
+        37,
+        22,
+        7,
+        8,
+        23,
+        38,
+        53,
+        68,
+        83,
+        98,
+      ]),
+      _cellPath([
+        134,
+        133,
+        132,
+        131,
+        130,
+        144,
+        159,
+        174,
+        189,
+        204,
+        219,
+        218,
+        217,
+        202,
+        187,
+        172,
+        157,
+        142,
+        126,
+        125,
+        124,
+        123,
+        122,
+        121,
+        106,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        82,
+        67,
+        52,
+        37,
+        22,
+        7,
+        8,
+        9,
+        24,
+        39,
+        54,
+        69,
+        84,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        120,
+        119,
+        118,
+        117,
+        116,
+        115,
+        114,
+      ]),
+      _cellPath([
+        202,
+        187,
+        172,
+        157,
+        142,
+        126,
+        125,
+        124,
+        123,
+        122,
+        121,
+        106,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        82,
+        67,
+        52,
+        37,
+        22,
+        7,
+        8,
+        9,
+        24,
+        39,
+        54,
+        69,
+        84,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        120,
+        135,
+        134,
+        133,
+        132,
+        131,
+        130,
+        144,
+        159,
+        174,
+        189,
+        204,
+        219,
+        218,
+        203,
+        188,
+        173,
+        158,
+        143,
+        128,
+      ]),
     ];
-    final base = positions[player];
+    final homeLanes = <List<Offset>>[
+      _cellPath([106, 107, 108, 109, 110, 111, 112]),
+      _cellPath([8, 23, 38, 53, 68, 83, 98]),
+      _cellPath([218, 203, 188, 173, 158, 143, 128]),
+      _cellPath([120, 119, 118, 117, 116, 115, 114]),
+    ];
+    final routeIndexByPlayer = <int>[0, 1, 3, 2];
+    final routeIndex = routeIndexByPlayer[player];
+    final path = <Offset>[...mainPaths[routeIndex], ...homeLanes[routeIndex]];
+    final visibleProgress = progress;
+    final pathIndex = visibleProgress.clamp(0, path.length - 1).toInt();
+    final base = path[pathIndex];
+    final isFinished = pathIndex == path.length - 1;
+    final tokenSize = cellSize * 0.7;
     final offset = Offset(
-      (piece % 2) * cellSize * 0.25,
-      (piece ~/ 2) * cellSize * 0.25,
+      (piece % 2) * cellSize * 0.18,
+      (piece ~/ 2) * cellSize * 0.18,
     );
-    final tokenSize = cellSize * 0.8;
 
     return Positioned(
-      left: base.dx + offset.dx + (cellSize - tokenSize) / 2,
-      top: base.dy + offset.dy + (cellSize - tokenSize) / 2,
-      child: IgnorePointer(
+      left: base.dx * cellSize + offset.dx + (cellSize - tokenSize) / 2,
+      top: base.dy * cellSize + offset.dy + (cellSize - tokenSize) / 2,
+      child: GestureDetector(
+        onTap: canSelect && !isFinished ? () => onTokenTap(piece) : null,
         child: GamePiece(color: color, size: tokenSize),
       ),
     );

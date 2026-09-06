@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'widgets/ludo_game_screen.dart';
+import 'widgets/home_screen.dart';
 
 void main() {
   runApp(const LudoApp());
@@ -15,13 +15,10 @@ class LudoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Ludo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LudoGameScreen(),
+      home: const HomeScreen(),
     );
   }
 }
-

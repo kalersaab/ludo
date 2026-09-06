@@ -51,7 +51,7 @@ class PathCell extends StatelessWidget {
             Center(
               child: Icon(
                 Icons.star,
-                color: Colors.grey,
+                color: safeColor ?? Colors.amber.shade700,
                 size: cellSize * 0.6,
               ),
             ),

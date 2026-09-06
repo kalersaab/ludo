@@ -22,9 +22,9 @@ class CenterTrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
-    
+
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // Green triangle (top)
     paint.color = const Color(0xFF00C853);
     final greenPath = Path()
@@ -33,16 +33,16 @@ class CenterTrianglePainter extends CustomPainter {
       ..lineTo(center.dx, center.dy)
       ..close();
     canvas.drawPath(greenPath, paint);
-    
-    // Blue triangle (left) - Changed from Yellow
-    paint.color = const Color(0xFF2196F3);
-    final bluePath = Path()
+
+    // Red triangle (left)
+    paint.color = const Color(0xFFFF0000);
+    final redPath = Path()
       ..moveTo(0, 0)
       ..lineTo(0, size.height)
       ..lineTo(center.dx, center.dy)
       ..close();
-    canvas.drawPath(bluePath, paint);
-    
+    canvas.drawPath(redPath, paint);
+
     // Yellow triangle (right) - Changed from Blue
     paint.color = const Color(0xFFFFEB3B);
     final yellowPath = Path()
@@ -51,25 +51,25 @@ class CenterTrianglePainter extends CustomPainter {
       ..lineTo(center.dx, center.dy)
       ..close();
     canvas.drawPath(yellowPath, paint);
-    
-    // Red triangle (bottom)
-    paint.color = const Color(0xFFFF0000);
-    final redPath = Path()
+
+    // Blue triangle (bottom)
+    paint.color = const Color(0xFF2196F3);
+    final bluePath = Path()
       ..moveTo(0, size.height)
       ..lineTo(size.width, size.height)
       ..lineTo(center.dx, center.dy)
       ..close();
-    canvas.drawPath(redPath, paint);
+    canvas.drawPath(bluePath, paint);
 
     // Draw borders
     paint.style = PaintingStyle.stroke;
     paint.color = Colors.black54;
     paint.strokeWidth = 1;
-    
+
     canvas.drawPath(greenPath, paint);
-    canvas.drawPath(bluePath, paint);
-    canvas.drawPath(yellowPath, paint);
     canvas.drawPath(redPath, paint);
+    canvas.drawPath(yellowPath, paint);
+    canvas.drawPath(bluePath, paint);
   }
 
   @override
