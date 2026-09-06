@@ -3,18 +3,21 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import '../native_ludo.dart';
+import '../models/ludo_rules.dart';
 import 'ludo_board.dart';
 import 'dice_controls.dart';
 
 class LudoGameScreen extends StatefulWidget {
   final int playerCount;
   final bool playWithComputer;
+  final LudoRules rules;
 
   const LudoGameScreen({
     super.key,
     this.playerCount = 4,
     this.playWithComputer = false,
-  });
+    LudoRules? rules,
+  }) : rules = rules ?? const LudoRules();
 
   @override
   State<LudoGameScreen> createState() => _LudoGameScreenState();
@@ -26,8 +29,13 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
   NativeLudoGame? nativeGame;
   bool resolvingRoll = false;
   bool awaitingTokenSelection = false;
+  int consecutiveSixes = 0;
+  String? winner;
+  bool gameOver = false;
   final List<Set<int>> movedPieces = [<int>{}, <int>{}, <int>{}, <int>{}];
   final List<Map<int, int>> piecePositions = List.generate(4, (_) => {});
+
+  LudoRules get rules => widget.rules;
 
   int get currentPlayerIndex => _activePlayers.indexOf(currentPlayer);
 
@@ -311,11 +319,12 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
   }
 
   void rollDice() {
-    if (resolvingRoll) {
+    if (resolvingRoll || gameOver) {
       return;
     }
 
-    final rolledValue = nativeGame?.rollDice() ?? math.Random().nextInt(6) + 1;
+    final rolledValue = nativeGame?.rollDice() ?? 
+                       (math.Random().nextInt(rules.diceSides) + 1);
 
     setState(() {
       resolvingRoll = true;
@@ -328,7 +337,8 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
         return;
       }
 
-      if (rolledValue == 6) {
+      // Check if dice value allows token entry
+      if (rules.canEnterBoard(rolledValue)) {
         setState(() {
           resolvingRoll = false;
           awaitingTokenSelection = true;
@@ -360,7 +370,7 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
       return;
     }
 
-    final piece = diceValue == 6
+    final piece = rules.canEnterBoard(diceValue)
         ? (_firstAvailablePiece() ??
               (movedPieces[currentPlayerIndex].isEmpty
                   ? null
@@ -378,13 +388,28 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
       resolvingRoll = false;
       awaitingTokenSelection = false;
       nativeGame?.endTurn();
-      currentPlayer =
-          _activePlayers[(currentPlayerIndex + 1) % _activePlayers.length];
+      
+      // Check if player gets extra turn
+      if (rules.grantsExtraTurn(diceValue)) {
+        consecutiveSixes++;
+        
+        // Check if max consecutive sixes reached
+        if (consecutiveSixes >= rules.maxConsecutiveSixes) {
+          currentPlayer =
+              _activePlayers[(currentPlayerIndex + 1) % _activePlayers.length];
+          consecutiveSixes = 0;
+        }
+        // Otherwise, same player continues
+      } else {
+        currentPlayer =
+            _activePlayers[(currentPlayerIndex + 1) % _activePlayers.length];
+        consecutiveSixes = 0;
+      }
     });
 
     if (_isComputerTurn) {
       Future<void>.delayed(const Duration(milliseconds: 450), () {
-        if (mounted && _isComputerTurn) {
+        if (mounted && _isComputerTurn && !gameOver) {
           rollDice();
         }
       });
@@ -393,31 +418,41 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
 
   void _moveTokenAfterRoll(int piece, int rolledValue) {
     final tokenWasOut = movedPieces[currentPlayerIndex].contains(piece);
-    if (!tokenWasOut && rolledValue != 6) {
+    
+    // Check if token can enter
+    if (!tokenWasOut && !rules.canEnterBoard(rolledValue)) {
       return;
     }
 
     final previousProgress = piecePositions[currentPlayerIndex][piece] ?? 0;
-    const finishProgress = 56;
+    final finishProgress = rules.finishPosition;
+    
+    // Check if move exceeds finish position
     if (tokenWasOut && previousProgress + rolledValue > finishProgress) {
-      if (rolledValue == 6) {
-        setState(() {
-          resolvingRoll = false;
-          awaitingTokenSelection = true;
-        });
-        return;
-      }
+      if (rules.mustLandExactly) {
+        // Cannot move beyond finish with exact landing rule
+        if (rules.canEnterBoard(rolledValue)) {
+          setState(() {
+            resolvingRoll = false;
+            awaitingTokenSelection = true;
+          });
+          return;
+        }
 
-      if (movedPieces[currentPlayerIndex].length > 1) {
-        setState(() {
-          resolvingRoll = false;
-          awaitingTokenSelection = true;
-        });
-        return;
-      }
+        if (movedPieces[currentPlayerIndex].length > 1) {
+          setState(() {
+            resolvingRoll = false;
+            awaitingTokenSelection = true;
+          });
+          return;
+        }
 
-      _endTurnAfterRoll();
-      return;
+        _endTurnAfterRoll();
+        return;
+      } else {
+        // Allow overshooting - just land on finish
+        // Continue with move to finish position
+      }
     }
 
     final moved = nativeGame?.movePiece(currentPlayerIndex, piece) ?? true;
@@ -429,54 +464,119 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
       resolvingRoll = false;
       awaitingTokenSelection = false;
       movedPieces[currentPlayerIndex].add(piece);
-      final newProgress = tokenWasOut ? previousProgress + rolledValue : 0;
+      
+      // Calculate new progress
+      final newProgress = tokenWasOut 
+          ? (rules.mustLandExactly 
+              ? previousProgress + rolledValue 
+              : math.min(previousProgress + rolledValue, finishProgress))
+          : 0;
+      
       piecePositions[currentPlayerIndex][piece] = newProgress;
-      final destinationCell = _cellAt(currentPlayerIndex, newProgress);
+      
+      // Check if token finished
+      if (newProgress >= finishProgress) {
+        // Check if all tokens finished (player won)
+        final finishedCount = piecePositions[currentPlayerIndex]
+            .values
+            .where((progress) => progress >= finishProgress)
+            .length;
+        
+        if (finishedCount >= rules.tokensPerPlayer) {
+          winner = currentPlayer;
+          gameOver = true;
+          _showWinnerDialog();
+          return;
+        }
+      }
+      
+      // Handle captures if enabled
+      if (rules.captureEnabled && newProgress < finishProgress) {
+        final destinationCell = _cellAt(currentPlayerIndex, newProgress);
 
-      // Define safe cells:
-      // - Starting cells for each player: 92 (Red), 24 (Green), 134 (Blue), 202 (Yellow)
-      // - Star cells on the board at safe positions
-      const protectedCells = {
-        92,  // Red starting cell
-        24,  // Green starting cell  
-        134, // Blue starting cell
-        202, // Yellow starting cell
-        // Star safe cells (2 steps before each player's starting position)
-        22,  // Star on Red's path (before 24)
-        82,  // Star on Green's path (before 92)  
-        132, // Star on Blue's path (before 134)
-        204, // Star on Yellow's path (before 202)
-      };
-      if (destinationCell != null &&
-          !protectedCells.contains(destinationCell)) {
-        for (int opponent = 0; opponent < movedPieces.length; opponent++) {
-          if (opponent == currentPlayerIndex) {
-            continue;
-          }
+        if (destinationCell != null && !rules.isSafeCell(destinationCell)) {
+          for (int opponent = 0; opponent < movedPieces.length; opponent++) {
+            if (opponent == currentPlayerIndex) {
+              continue;
+            }
 
-          final capturedPieces = movedPieces[opponent].where((opponentPiece) {
-            final opponentProgress = piecePositions[opponent][opponentPiece];
-            return opponentProgress != null &&
-                _isCaptureTarget(opponent, opponentProgress, destinationCell);
-          }).toList();
+            final capturedPieces = movedPieces[opponent].where((opponentPiece) {
+              final opponentProgress = piecePositions[opponent][opponentPiece];
+              return opponentProgress != null &&
+                  _isCaptureTarget(opponent, opponentProgress, destinationCell);
+            }).toList();
 
-          for (final capturedPiece in capturedPieces) {
-            movedPieces[opponent].remove(capturedPiece);
-            piecePositions[opponent].remove(capturedPiece);
+            for (final capturedPiece in capturedPieces) {
+              movedPieces[opponent].remove(capturedPiece);
+              piecePositions[opponent].remove(capturedPiece);
+            }
           }
         }
       }
     });
 
-    if (rolledValue != 6) {
+    if (!rules.grantsExtraTurn(rolledValue)) {
       _endTurnAfterRoll();
+    }
+  }
+
+  void _showWinnerDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('🎉 Game Over!'),
+          content: Text(
+            '$winner wins!\n\nAll tokens have reached home.',
+            style: const TextStyle(fontSize: 18),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('Back to Home'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _resetGame();
+                });
+              },
+              child: const Text('Play Again'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _resetGame() {
+    currentPlayer = 'Red';
+    diceValue = 1;
+    resolvingRoll = false;
+    awaitingTokenSelection = false;
+    consecutiveSixes = 0;
+    winner = null;
+    gameOver = false;
+    
+    for (var playerPieces in movedPieces) {
+      playerPieces.clear();
+    }
+    
+    for (var playerPositions in piecePositions) {
+      playerPositions.clear();
     }
   }
 
   void moveToken(int piece) {
     if (resolvingRoll ||
         !awaitingTokenSelection ||
-        (diceValue != 6 && !movedPieces[currentPlayerIndex].contains(piece))) {
+        (!rules.canEnterBoard(diceValue) && !movedPieces[currentPlayerIndex].contains(piece)) ||
+        gameOver) {
       return;
     }
 

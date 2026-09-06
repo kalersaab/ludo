@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/ludo_rules.dart';
 import 'ludo_game_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -35,7 +36,10 @@ class HomeScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => LudoGameScreen(playerCount: count),
+                            builder: (_) => LudoGameScreen(
+                              playerCount: count,
+                              rules: LudoRules.standard(playerCount: count),
+                            ),
                           ),
                         );
                       },
@@ -55,8 +59,11 @@ class HomeScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            const LudoGameScreen(playerCount: 2, playWithComputer: true),
+        builder: (_) => LudoGameScreen(
+          playerCount: 2,
+          playWithComputer: true,
+          rules: const LudoRules.standard(playerCount: 2),
+        ),
       ),
     );
   }

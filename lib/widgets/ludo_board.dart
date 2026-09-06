@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'home_area.dart';
 import 'center_area.dart';
-import 'game_piece.dart';
+import 'animated_token.dart';
 import 'path_sections.dart';
 
 class LudoBoard extends StatelessWidget {
@@ -426,7 +426,6 @@ class LudoBoard extends StatelessWidget {
     final path = <Offset>[...mainPaths[routeIndex], ...homeLanes[routeIndex]];
     final visibleProgress = progress;
     final pathIndex = visibleProgress.clamp(0, path.length - 1).toInt();
-    final base = path[pathIndex];
     final isFinished = pathIndex == path.length - 1;
     final tokenSize = cellSize * 0.7;
     final offset = Offset(
@@ -434,13 +433,18 @@ class LudoBoard extends StatelessWidget {
       (piece ~/ 2) * cellSize * 0.18,
     );
 
-    return Positioned(
-      left: base.dx * cellSize + offset.dx + (cellSize - tokenSize) / 2,
-      top: base.dy * cellSize + offset.dy + (cellSize - tokenSize) / 2,
-      child: GestureDetector(
-        onTap: canSelect && !isFinished ? () => onTokenTap(piece) : null,
-        child: GamePiece(color: color, size: tokenSize),
-      ),
+    return AnimatedToken(
+      key: ValueKey('token_${player}_$piece'),
+      player: player,
+      piece: piece,
+      cellSize: cellSize,
+      color: color,
+      progress: progress,
+      canSelect: canSelect && !isFinished,
+      onTap: canSelect && !isFinished ? () => onTokenTap(piece) : null,
+      path: path,
+      offset: offset,
+      tokenSize: tokenSize,
     );
   }
 }
