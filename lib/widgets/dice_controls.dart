@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 class DiceControls extends StatefulWidget {
   final String currentPlayer;
   final int diceValue;
+  final bool enabled;
   final VoidCallback onRollDice;
 
   const DiceControls({
     super.key,
     required this.currentPlayer,
     required this.diceValue,
+    this.enabled = true,
     required this.onRollDice,
   });
 
@@ -40,7 +42,7 @@ class _DiceControlsState extends State<DiceControls>
   }
 
   void _rollDice() {
-    if (_rollController.isAnimating) {
+    if (!widget.enabled || _rollController.isAnimating) {
       return;
     }
 
@@ -66,160 +68,244 @@ class _DiceControlsState extends State<DiceControls>
     }
   }
 
-  Color _getPlayerTextColor(Color playerColor) {
-    return playerColor.computeLuminance() > 0.55
-        ? Colors.black87
-        : Colors.white;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 360),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-        boxShadow: [
-          BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+    final playerColor = _getPlayerColor(widget.currentPlayer);
+    final isLeftPlayer = widget.currentPlayer == 'Blue';
+    final isRightPlayer = widget.currentPlayer == 'Green';
+    final isVerticalLayout = isLeftPlayer || isRightPlayer;
+
+    if (isVerticalLayout) {
+      // Vertical layout for left/right players
+      return Container(
+        width: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          color: playerColor.withValues(alpha: 0.08),
+          border: Border(
+            left: isLeftPlayer ? BorderSide.none : const BorderSide(color: Colors.black12, width: 1),
+            right: isLeftPlayer ? const BorderSide(color: Colors.black12, width: 1) : BorderSide.none,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Expanded(
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 54),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: _getPlayerColor(widget.currentPlayer),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _getPlayerTextColor(
-                        _getPlayerColor(widget.currentPlayer),
-                      ).withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CURRENT TURN',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
-                            color: _getPlayerTextColor(
-                              _getPlayerColor(widget.currentPlayer),
-                            ).withValues(alpha: 0.75),
-                          ),
-                        ),
-                        Text(
-                          widget.currentPlayer,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: _getPlayerTextColor(
-                              _getPlayerColor(widget.currentPlayer),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Dice
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: Opacity(
+                opacity: widget.enabled ? 1 : 0.5,
+                child: GestureDetector(
+                  onTap: widget.enabled ? _rollDice : null,
+                  child: AnimatedBuilder(
+                    animation: _rollController,
+                    builder: (context, child) {
+                      final progress = _rollController.value;
+                      final faceIndex = math.min(
+                        (progress * _rollFaces.length).floor(),
+                        _rollFaces.length - 1,
+                      );
+                      final faceValue = progress == 1
+                          ? widget.diceValue
+                          : _rollFaces[faceIndex];
+                      final rotation =
+                          math.sin(progress * math.pi * 12) *
+                          (1 - progress) *
+                          0.25;
+                      final scale = 1 - math.sin(progress * math.pi) * 0.15;
+                      final offset =
+                          math.sin(progress * math.pi * 8) * (1 - progress) * 2;
+
+                      return Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: Transform.rotate(
+                          angle: rotation,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: playerColor,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: playerColor.withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: _buildDiceFace(faceValue),
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            // Location pin
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.green.shade600,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 76,
-            height: 76,
-            child: GestureDetector(
-              onTap: _rollDice,
-              child: AnimatedBuilder(
-                animation: _rollController,
-                builder: (context, child) {
-                final progress = _rollController.value;
-                final faceIndex = math.min(
-                  (progress * _rollFaces.length).floor(),
-                  _rollFaces.length - 1,
-                );
-                final faceValue = progress == 1
-                    ? widget.diceValue
-                    : _rollFaces[faceIndex];
-                final rotation =
-                    math.sin(progress * math.pi * 12) * (1 - progress) * 0.22;
-                final scale = 1 - math.sin(progress * math.pi) * 0.12;
-                final offset =
-                    math.sin(progress * math.pi * 8) * (1 - progress) * 2;
-
-                return Transform.translate(
-                  offset: Offset(offset, 0),
-                  child: Transform.rotate(
-                    angle: rotation,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey.shade400,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: _buildDiceFace(faceValue),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-                },
+              child: Center(
+                child: Icon(
+                  Icons.location_on,
+                  color: Colors.green.shade600,
+                  size: 18,
+                ),
               ),
             ),
+          ],
+        ),
+      );
+    } else {
+      // Horizontal layout for top/bottom players - fixed width
+      return Container(
+        width: 114,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: playerColor.withValues(alpha: 0.08),
+          border: Border(
+            top: widget.currentPlayer == 'Yellow' ? const BorderSide(color: Colors.black12, width: 1) : BorderSide.none,
+            bottom: widget.currentPlayer == 'Red' ? const BorderSide(color: Colors.black12, width: 1) : BorderSide.none,
           ),
-        ],
-      ),
-    );
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Dice on the left
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: Opacity(
+                opacity: widget.enabled ? 1 : 0.5,
+                child: GestureDetector(
+                  onTap: widget.enabled ? _rollDice : null,
+                  child: AnimatedBuilder(
+                    animation: _rollController,
+                    builder: (context, child) {
+                      final progress = _rollController.value;
+                      final faceIndex = math.min(
+                        (progress * _rollFaces.length).floor(),
+                        _rollFaces.length - 1,
+                      );
+                      final faceValue = progress == 1
+                          ? widget.diceValue
+                          : _rollFaces[faceIndex];
+                      final rotation =
+                          math.sin(progress * math.pi * 12) *
+                          (1 - progress) *
+                          0.25;
+                      final scale = 1 - math.sin(progress * math.pi) * 0.15;
+                      final offset =
+                          math.sin(progress * math.pi * 8) * (1 - progress) * 2;
+
+                      return Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: Transform.rotate(
+                          angle: rotation,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: playerColor,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: playerColor.withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: _buildDiceFace(faceValue),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            // Location pin indicator on the right
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.green.shade600,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.location_on,
+                  color: Colors.green.shade600,
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildDiceFace(int value) {
-    return CustomPaint(
-      size: const Size(60, 60),
-      painter: DicePainter(value),
-    );
+    return CustomPaint(size: const Size(40, 40), painter: DicePainter(value));
   }
 }
 

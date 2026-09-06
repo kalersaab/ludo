@@ -33,6 +33,7 @@ class VerticalPath extends StatelessWidget {
                         : (col == (isTop ? 2 : 0) && row == (isTop ? 1 : 4))
                             ? color
                                 : Colors.white,
+                    // Mark star safe cells
                     isSafe: (isTop && col == 0 && row == 2) ||
                       (!isTop && col == 2 && row == 3),
                     isArrow: (col == 1 && row == (isTop ? 0 : 5)),

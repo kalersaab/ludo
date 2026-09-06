@@ -112,9 +112,6 @@ void ludo_end_turn(LudoGameState* game) {
 		return;
 	}
 
-	if (game->dice_value != 6) {
-		game->current_player =
-				(game->current_player + 1) % LUDO_PLAYER_COUNT;
-	}
+	game->current_player = (game->current_player + 1) % LUDO_PLAYER_COUNT;
 	game->dice_value = 0;
 }
