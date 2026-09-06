@@ -5,11 +5,17 @@ import 'game_piece.dart';
 class HomeArea extends StatelessWidget {
   final Color color;
   final double size;
+  final bool canMove;
+  final ValueChanged<int>? onTokenTap;
+  final Set<int> movedPieces;
 
   const HomeArea({
     super.key,
     required this.color,
     required this.size,
+    this.canMove = false,
+    this.onTokenTap,
+    this.movedPieces = const {},
   });
 
   @override
@@ -35,22 +41,31 @@ class HomeArea extends StatelessWidget {
             mainAxisSpacing: size * 0.08,
             crossAxisSpacing: size * 0.08,
             physics: const NeverScrollableScrollPhysics(),
-            children: List.generate(
-              4,
-              (index) => Container(
+            children: List.generate(4, (index) {
+              final isMoved = movedPieces.contains(index);
+              final position = Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.grey.shade300,
-                    width: 1.5,
+                    color: canMove && !isMoved ? color : color.withValues(alpha: 0.35),
+                    width: 2,
                   ),
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(size * 0.02),
-                  child: GamePiece(color: color, size: size * 0.16),
+                  child: isMoved
+                      ? const SizedBox.shrink()
+                      : GamePiece(color: color, size: size * 0.16),
                 ),
-              ),
-            ),
+              );
+
+              return GestureDetector(
+                onTap: canMove && !isMoved && onTokenTap != null
+                    ? () => onTokenTap!(index)
+                    : null,
+                child: position,
+              );
+            }),
           ),
         ),
       ),

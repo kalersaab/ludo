@@ -13,9 +13,13 @@ class LudoGameScreen extends StatefulWidget {
 }
 
 class _LudoGameScreenState extends State<LudoGameScreen> {
-  int diceValue = 6;
+  int diceValue = 1;
   String currentPlayer = 'Red';
   NativeLudoGame? nativeGame;
+  final List<Set<int>> movedPieces = [<int>{}, <int>{}, <int>{}, <int>{}];
+
+  int get currentPlayerIndex => <String>['Red', 'Green', 'Blue', 'Yellow']
+      .indexOf(currentPlayer);
 
   @override
   void initState() {
@@ -32,6 +36,26 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
   void rollDice() {
     setState(() {
       diceValue = nativeGame?.rollDice() ?? math.Random().nextInt(6) + 1;
+    });
+  }
+
+  void moveToken(int piece) {
+    if (diceValue != 6 || movedPieces[currentPlayerIndex].contains(piece)) {
+      return;
+    }
+
+    final moved = nativeGame?.movePiece(currentPlayerIndex, piece) ?? true;
+    if (!moved) {
+      return;
+    }
+
+    setState(() {
+      movedPieces[currentPlayerIndex].add(piece);
+      nativeGame?.endTurn();
+      currentPlayer = <String>['Red', 'Green', 'Blue', 'Yellow'][
+        (currentPlayerIndex + 1) % 4
+      ];
+      diceValue = 1;
     });
   }
 
@@ -59,7 +83,12 @@ class _LudoGameScreenState extends State<LudoGameScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const LudoBoard(),
+                  LudoBoard(
+                    currentPlayer: currentPlayer,
+                    diceValue: diceValue,
+                    movedPieces: movedPieces,
+                    onTokenTap: moveToken,
+                  ),
                   const SizedBox(height: 16),
                   DiceControls(
                     currentPlayer: currentPlayer,
